@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Campus Daily - 맞춤형 큐레이션</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* 기존 스타일 유지 */
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif; }
+    body { background-color: #f5f7fb; color: #333; padding: 40px 20px; display: flex; justify-content: center; }
+    .container { max-width: 800px; width: 100%; }
+    header { text-align: center; margin-bottom: 30px; }
+    header h1 { color: #4f46e5; font-size: 2.2rem; margin-bottom: 8px; }
+    header p { color: #666; font-size: 1rem; }
+    .card { background: #ffffff; border-radius: 16px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05); padding: 30px; margin-bottom: 25px; }
+    .card h2 { font-size: 1.3rem; margin-bottom: 20px; color: #1e293b; display: flex; align-items: center; gap: 8px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+    .form-group { display: flex; flex-direction: column; gap: 8px; }
+    .form-group label { font-size: 0.9rem; font-weight: 500; color: #475569; }
+    .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; transition: all 0.2s; }
+    .form-group input:focus, .form-group select:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+    .submit-btn { grid-column: 1 / -1; background-color: #4f46e5; color: white; border: none; padding: 14px; border-radius: 8px; font-size: 1rem; font-weight: 500; cursor: pointer; transition: background 0.2s; margin-top: 10px; }
+    .submit-btn:hover { background-color: #4338ca; }
+    .loading { text-align: center; padding: 40px 0; color: #64748b; font-weight: 500; }
+    .section-title { font-size: 1.1rem; color: #4f46e5; margin: 25px 0 12px 0; border-left: 4px solid #4f46e5; padding-left: 8px; font-weight: 700; }
+    .data-list { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    .data-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center; transition: transform 0.2s, box-shadow 0.2s; }
+    .data-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+    .item-info h4 { font-size: 1rem; color: #1e293b; margin-bottom: 4px; }
+    .item-info p { font-size: 0.85rem; color: #64748b; }
+    .item-link { background: #ffffff; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; color: #334155; text-decoration: none; font-weight: 500; transition: all 0.2s; }
+    .item-link:hover { background: #4f46e5; color: white; border-color: #4f46e5; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>Campus Daily</h1>
+      <p>대학생을 위한 맞춤형 정책 · 알바 · 대외활동 · 축제 큐레이션</p>
+    </header>
+
+    <div class="card">
+      <h2>👤 나만의 맞춤 조건 설정</h2>
+      <form id="custom-info-form" class="form-grid">
+        <div class="form-group">
+          <label for="userName">이름</label>
+          <input type="text" id="userName" placeholder="홍길동" required>
+        </div>
+        <div class="form-group">
+          <label for="userContact">연락처</label>
+          <input type="tel" id="userContact" placeholder="010-0000-0000">
+        </div>
+        <div class="form-group">
+          <label for="userRegion">선호 지역</label>
+          <select id="userRegion" required>
+            <option value="">선택하세요</option>
+            <option value="서울">서울특별시</option>
+            <option value="부산">부산광역시</option>
+            <option value="경기">경기도</option>
+            <option value="전국">전국 (상관없음)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="userGender">성별</label>
+          <select id="userGender" required>
+            <option value="">선택하세요</option>
+            <option value="남성">남성</option>
+            <option value="여성">여성</option>
+            <option value="무관">해당없음 / 무관</option>
+          </select>
+        </div>
+        <button type="submit" class="submit-btn">🔍 맞춤형 매칭 시작하기</button>
+      </form>
+    </div>
+
+    <div id="result-card" class="card" style="display: none;">
+      <h2 id="result-welcome-title">🎉 맞춤형 큐레이션 결과</h2>
+      <div id="result-content"></div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('custom-info-form').addEventListener('submit', async function(event) {
+      event.preventDefault();
+
+      const name = document.getElementById('userName').value;
+      const formData = {
+        name: name,
+        contact: document.getElementById('userContact').value,
+        region: document.getElementById('userRegion').value,
+        gender: document.getElementById('userGender').value
+      };
+
+      const resultCard = document.getElementById('result-card');
+      const resultContent = document.getElementById('result-content');
+
+      resultCard.style.display = 'block';
+      resultContent.innerHTML = '<div class="loading">⚙️ n8n 파이프라인에서 맞춤 정보를 분석하고 있습니다... 잠시만 기다려주세요.</div>';
+
+      try {
+        const n8nWebhookUrl = 'https://ky06ykoo49.app.n8n.cloud/webhook-test/campus_daily'; //
+
+      const responseData = await response.json();
+        console.log("🔥 n8n 원본 데이터:", responseData);
+
+        // 1. 빈 마스터 상자 준비
+        let masterData = { policies: [], part_time_jobs: [], activities: [], festivals: [] };
+
+        // 2. n8n이 보낸 모든 상자(배열)를 열어서 마스터 상자에 다 쏟아붓기!
+        if (Array.isArray(responseData)) {
+          responseData.forEach(item => {
+            const innerData = item.json || item; // 껍데기 벗기기
+            if (innerData.policies) masterData.policies.push(...innerData.policies);
+            if (innerData.part_time_jobs) masterData.part_time_jobs.push(...innerData.part_time_jobs);
+            if (innerData.activities) masterData.activities.push(...innerData.activities);
+            if (innerData.festivals) masterData.festivals.push(...innerData.festivals);
+          });
+        } else {
+          // 상자가 하나만 온 경우
+          const innerData = responseData.json || responseData;
+          masterData = { ...masterData, ...innerData };
+        }
+
+        console.log("✨ 정제된 통합 알맹이:", masterData);
+
+        // 3. 타이틀 변경 및 결과 렌더링
+        document.getElementById('result-welcome-title').innerText = `🎉 ${name}님을 위한 실시간 맞춤 정보`;
+        
+        // 🚨 기존에 renderData(data) 였던 것을 masterData로 변경!
+        renderData(masterData);
+
+      } catch (error) {
+        console.error(error);
+        resultContent.innerHTML = '<p style="color: #ef4444; text-align:center; padding:20px 0;">❌ 데이터를 가져오지 못했습니다. n8n 워크플로우 활성화 상태를 확인해주세요.</p>';
+      }
+    });
+
+    function renderData(data) {
+      const content = document.getElementById('result-content');
+      content.innerHTML = ''; 
+
+      // 데이터 자체가 비어있거나 검색된 항목이 하나도 없을 때의 방어 로직
+      const isEmpty = !data || (
+        (data.policies?.length || 0) === 0 &&
+        (data.part_time_jobs?.length || 0) === 0 &&
+        (data.activities?.length || 0) === 0 &&
+        (data.festivals?.length || 0) === 0
+      );
+
+      if (isEmpty) {
+        content.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px 0;">조건에 맞는 검색 결과가 없습니다.</p>';
+        return;
+      }
+
+      if (data.policies && data.policies.length > 0) {
+        content.innerHTML += `<div class="section-title">💡 맞춤형 정부 청년정책</div>`;
+        let html = '<div class="data-list">';
+        data.policies.forEach(item => {
+          html += `
+            <div class="data-item">
+              <div class="item-info">
+                <h4>${item.title}</h4>
+                <p>📅 접수 기간: ${item.period || '공고 확인'}</p>
+              </div>
+              <a href="${item.link}" target="_blank" class="item-link">상세 보기</a>
+            </div>`;
+        });
+        html += '</div>';
+        content.innerHTML += html;
+      }
+
+      if (data.part_time_jobs && data.part_time_jobs.length > 0) {
+        content.innerHTML += `<div class="section-title">🏃 추천 단기/재택 알바</div>`;
+        let html = '<div class="data-list">';
+        data.part_time_jobs.forEach(item => {
+          html += `
+            <div class="data-item">
+              <div class="item-info">
+                <h4>${item.title}</h4>
+                <p>💰 급여 조건: ${item.pay || '공고 확인'}</p>
+              </div>
+              <a href="${item.link}" target="_blank" class="item-link">지원하기</a>
+            </div>`;
+        });
+        html += '</div>';
+        content.innerHTML += html;
+      }
+
+      if (data.activities && data.activities.length > 0) {
+        content.innerHTML += `<div class="section-title">🏆 스펙 업! 대외활동 추천</div>`;
+        let html = '<div class="data-list">';
+        data.activities.forEach(item => {
+          html += `
+            <div class="data-item">
+              <div class="item-info">
+                <h4>${item.title}</h4>
+                <p>⏰ 마감 기한: ${item.deadline || '확인 필요'}</p>
+              </div>
+              <a href="${item.link}" target="_blank" class="item-link">상세 보기</a>
+            </div>`;
+        });
+        html += '</div>';
+        content.innerHTML += html;
+      }
+
+      if (data.festivals && data.festivals.length > 0) {
+        content.innerHTML += `<div class="section-title">🎈 추천 축제 및 문화 행사</div>`;
+        let html = '<div class="data-list">';
+        data.festivals.forEach(item => {
+          html += `
+            <div class="data-item">
+              <div class="item-info">
+                <h4>${item.title}</h4>
+                <p>📍 위치: ${item.location} | 📅 일시: ${item.period || '공고 확인'}</p>
+              </div>
+              <a href="${item.link}" target="_blank" class="item-link">행사 정보</a>
+            </div>`;
+        });
+        html += '</div>';
+        content.innerHTML += html;
+      }
+    }
+  </script>
+</body>
+</html>
